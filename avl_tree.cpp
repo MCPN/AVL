@@ -7,7 +7,7 @@ public:
     using init_list = std::initializer_list<ValueType>;
     using iterator = typename std::list<ValueType>::const_iterator;
 
-    Set(): root(nullptr), sz(0), lst() {}
+    Set(): root(nullptr), sz(0), items() {}
 
     template<typename Iterator>
     Set(Iterator first, Iterator last): Set() {
@@ -24,19 +24,19 @@ public:
 
     Set(const Set &other): Set() {
         if (this != &other) {
-            for (auto &elem : other.lst) {
+            for (auto &elem : other.items) {
                 insert(elem);
             }
         }
     }
-    Set& operator =(const Set &other) {
+    Set& operator = (const Set &other) {
         if (this != &other) {
             clear(root);
             root = nullptr;
             sz = 0;
-            lst.clear();
+            items.clear();
 
-            for (auto &elem : other.lst) {
+            for (auto &elem : other.items) {
                 insert(elem);
             }
         }
@@ -48,7 +48,7 @@ public:
         clear(root);
         root = nullptr;
         sz = 0;
-        lst.clear();
+        items.clear();
     }
 
     size_t size() const {
@@ -73,10 +73,10 @@ public:
     }
 
     iterator begin() const {
-        return lst.cbegin();
+        return items.cbegin();
     }
     iterator end() const {
-        return lst.cend();
+        return items.cend();
     }
 
     iterator find(const ValueType &elem) const {
@@ -98,56 +98,61 @@ private:
 
     Node *root;
     size_t sz;
-    std::list<ValueType> lst;
+    std::list<ValueType> items;
 
     void clear(Node *node) {
         if (!node) {
             return;
         }
 
-        clear(node -> left);
-        clear(node -> right);
+        clear(node->left);
+        clear(node->right);
         delete node;
     }
 
     int height(Node *node) {
-        return (node ? node -> h : 0);
+        return (node ? node->h : 0);
     }
     int diff(Node *node) {
-        return (node ? height(node -> right) - height(node -> left) : 0);
+        return (node ? height(node->right) - height(node->left) : 0);
     }
     void relax(Node *node) {
-        node -> h = 1 + std::max(height(node -> left), height(node -> right));
+        node->h = 1 + std::max(height(node->left), height(node->right));
     }
 
+    // Left rotation
     Node* rotate_left(Node *node) {
-        Node *center = node -> right;
-        node -> right = center -> left;
-        center -> left = node;
+        Node *center = node->right;
+        node->right = center->left;
+        center->left = node;
         relax(node);
         relax(center);
         return center;
     }
+    // Right rotation
     Node* rotate_right(Node *node) {
-        Node *center = node -> left;
-        node -> left = center -> right;
-        center -> right = node;
+        Node *center = node->left;
+        node->left = center->right;
+        center->right = node;
         relax(node);
         relax(center);
         return center;
     }
 
+    // Main AVL function: fix tree's balance
     Node* balance(Node *node) {
         relax(node);
         int node_balance = diff(node);
         if (node_balance == 2) {
-            if (diff(node -> right) < 0) {
-                node -> right = rotate_right(node -> right);
+            if (diff(node->right) < 0) {
+                // Right-left rotation
+                node->right = rotate_right(node->right);
             }
             return rotate_left(node);
         } else if (node_balance == -2) {
-            if (diff(node -> left) > 0) {
-                node -> left = rotate_left(node -> left);
+            if (diff(node->left) > 0) {
+                // Left-right rotation
+                node->left = rotate_left(node->left);
             }
             return rotate_right(node);
         }
@@ -160,32 +165,33 @@ private:
             auto next = lb(root, elem);
             iterator it;
             if (next == end()) {
-                lst.push_back(elem);
-                it = --lst.cend();
+                items.push_back(elem);
+                it = --items.cend();
             } else {
-                it = lst.insert(next, elem);
+                it = items.insert(next, elem);
             }
             return new Node(elem, it);
         }
 
-        if (elem < node -> val) {
-            node -> left = put(node -> left, elem);
+        if (elem < node->val) {
+            node->left = put(node->left, elem);
         } else {
-            node -> right = put(node -> right, elem);
+            node->right = put(node->right, elem);
         }
 
         return balance(node);
     }
 
+    // Functions that used in deletion in order to swap min and elem
     Node* find_min(Node *node) {
-        return (node -> left ? find_min(node -> left) : node);
+        return (node->left ? find_min(node->left) : node);
     }
     Node* remove_min(Node *node) {
-        if (!node -> left) {
-            return node -> right;
+        if (!node->left) {
+            return node->right;
         }
 
-        node -> left = remove_min(node -> left);
+        node->left = remove_min(node->left);
         return balance(node);
     }
 
@@ -194,21 +200,21 @@ private:
             return nullptr;
         }
 
-        if (elem < node -> val) {
-            node -> left = del(node -> left, elem);
-        } else if (node -> val < elem) {
-            node -> right = del(node -> right, elem);
+        if (elem < node->val) {
+            node->left = del(node->left, elem);
+        } else if (node->val < elem) {
+            node->right = del(node->right, elem);
         } else {
-            Node *left = node -> left, *right = node -> right;
-            lst.erase(node -> iter);
+            Node *left = node->left, *right = node->right;
+            items.erase(node->iter);
             delete node;
             if (!right) {
                 return left;
             }
 
             Node *mn = find_min(right);
-            mn -> right = remove_min(right);
-            mn -> left = left;
+            mn->right = remove_min(right);
+            mn->left = left;
             return balance(mn);
         }
 
@@ -220,12 +226,12 @@ private:
             return end();
         }
 
-        if (elem < node -> val) {
-            return search(node -> left, elem);
-        } else if (node -> val < elem) {
-            return search(node -> right, elem);
+        if (elem < node->val) {
+            return search(node->left, elem);
+        } else if (node->val < elem) {
+            return search(node->right, elem);
         } else {
-            return node -> iter;
+            return node->iter;
         }
 
     }
@@ -235,13 +241,13 @@ private:
             return end();
         }
 
-        if (elem < node -> val) {
-            iterator left = lb(node -> left, elem);
-            return (left == end() ? node -> iter : left);
-        } else if (node -> val < elem) {
-            return lb(node -> right, elem);
+        if (elem < node->val) {
+            iterator left = lb(node->left, elem);
+            return (left == end() ? node->iter : left);
+        } else if (node->val < elem) {
+            return lb(node->right, elem);
         } else {
-            return node -> iter;
+            return node->iter;
         }
     }
 };
