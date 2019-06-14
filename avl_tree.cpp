@@ -1,3 +1,11 @@
+/* 
+AVL Tree
+Main source: https://habr.com/ru/post/150732/
+Changes: 
+1) Added std::list which allows to iterate through the tree
+2) Other minor upgrades added in order to pass the task
+*/
+
 #include <iterator>
 #include <list>
 
@@ -148,12 +156,14 @@ private:
                 // Right-left rotation
                 node->right = rotate_right(node->right);
             }
+            // Small left rotation
             return rotate_left(node);
         } else if (node_balance == -2) {
             if (diff(node->left) > 0) {
                 // Left-right rotation
                 node->left = rotate_left(node->left);
             }
+            // Small right rotation
             return rotate_right(node);
         }
 
