@@ -1,7 +1,7 @@
-/* 
+/*
 AVL Tree
 Main source: https://habr.com/ru/post/150732/
-Changes: 
+Changes:
 1) Added std::list which allows to iterate through the tree
 2) Other minor upgrades added in order to pass the task
 */
@@ -24,27 +24,27 @@ public:
         }
     }
 
-    Set(const init_list &elems): Set() {
-        for (const auto &elem : elems) {
+    Set(const init_list& elems): Set() {
+        for (const auto& elem : elems) {
             insert(elem);
         }
     }
 
-    Set(const Set &other): Set() {
+    Set(const Set& other): Set() {
         if (this != &other) {
-            for (auto &elem : other.items) {
+            for (auto& elem : other.items) {
                 insert(elem);
             }
         }
     }
-    Set& operator = (const Set &other) {
+    Set& operator = (const Set& other) {
         if (this != &other) {
             clear(root);
             root = nullptr;
             sz = 0;
             items.clear();
 
-            for (auto &elem : other.items) {
+            for (auto& elem : other.items) {
                 insert(elem);
             }
         }
@@ -87,10 +87,10 @@ public:
         return items.cend();
     }
 
-    iterator find(const ValueType &elem) const {
+    iterator find(const ValueType& elem) const {
         return search(root, elem);
     }
-    iterator lower_bound(const ValueType &elem) const {
+    iterator lower_bound(const ValueType& elem) const {
         return lb(root, elem);
     }
 
@@ -101,14 +101,14 @@ private:
         Node* left, *right;
         iterator iter;
 
-        Node(const ValueType &v, iterator &it): val(v), h(1), left(nullptr), right(nullptr), iter(it) {}
+        Node(const ValueType& v, iterator& it): val(v), h(1), left(nullptr), right(nullptr), iter(it) {}
     };
 
-    Node *root;
+    Node* root;
     size_t sz;
     std::list<ValueType> items;
 
-    void clear(Node *node) {
+    void clear(Node* node) {
         if (!node) {
             return;
         }
@@ -118,19 +118,19 @@ private:
         delete node;
     }
 
-    int height(Node *node) {
+    int height(Node* node) {
         return (node ? node->h : 0);
     }
-    int diff(Node *node) {
+    int diff(Node* node) {
         return (node ? height(node->right) - height(node->left) : 0);
     }
-    void relax(Node *node) {
+    void relax(Node* node) {
         node->h = 1 + std::max(height(node->left), height(node->right));
     }
 
     // Left rotation
-    Node* rotate_left(Node *node) {
-        Node *center = node->right;
+    Node* rotate_left(Node* node) {
+        Node* center = node->right;
         node->right = center->left;
         center->left = node;
         relax(node);
@@ -139,7 +139,7 @@ private:
     }
     // Right rotation
     Node* rotate_right(Node *node) {
-        Node *center = node->left;
+        Node* center = node->left;
         node->left = center->right;
         center->right = node;
         relax(node);
@@ -148,29 +148,32 @@ private:
     }
 
     // Main AVL function: fix tree's balance
-    Node* balance(Node *node) {
+    Node* balance(Node* node) {
         relax(node);
         int node_balance = diff(node);
+        // Right subtree's depth is too big
         if (node_balance == 2) {
             if (diff(node->right) < 0) {
-                // Right-left rotation
+                // Right-left rotation: make right-right subtree's depth bigger than right-left subtree's
                 node->right = rotate_right(node->right);
             }
-            // Small left rotation
+            // Otherwise simple left rotation is enough
             return rotate_left(node);
+        // Left subtree's depth is too big
         } else if (node_balance == -2) {
             if (diff(node->left) > 0) {
-                // Left-right rotation
+                // Left-right rotation: make left-left subtree's depth smaller than left-right subtree's
                 node->left = rotate_left(node->left);
             }
-            // Small right rotation
+            // Otherwise simple right rotation is enough
             return rotate_right(node);
         }
 
+        // Both subtrees have right depth's
         return node;
     }
 
-    Node* put(Node *node, const ValueType &elem) {
+    Node* put(Node* node, const ValueType& elem) {
         if (!node) {
             auto next = lb(root, elem);
             iterator it;
@@ -192,11 +195,12 @@ private:
         return balance(node);
     }
 
-    // Functions that used in deletion in order to swap min and elem
-    Node* find_min(Node *node) {
+    // Returns minimum in node's subtree
+    Node* find_min(Node* node) {
         return (node->left ? find_min(node->left) : node);
     }
-    Node* remove_min(Node *node) {
+    // Removes minimum from node's subtree
+    Node* remove_min(Node* node) {
         if (!node->left) {
             return node->right;
         }
@@ -205,7 +209,7 @@ private:
         return balance(node);
     }
 
-    Node* del(Node *node, const ValueType &elem) {
+    Node* del(Node* node, const ValueType& elem) {
         if (!node) {
             return nullptr;
         }
@@ -215,14 +219,17 @@ private:
         } else if (node->val < elem) {
             node->right = del(node->right, elem);
         } else {
-            Node *left = node->left, *right = node->right;
+            // AVL can't delete node directly; instead it would be replaced with minimum in it's right subtree,
+            // and minimum can be easily deleted
+            Node* left = node->left;
+            Node* right = node->right;
             items.erase(node->iter);
             delete node;
             if (!right) {
                 return left;
             }
 
-            Node *mn = find_min(right);
+            Node* mn = find_min(right);
             mn->right = remove_min(right);
             mn->left = left;
             return balance(mn);
@@ -231,7 +238,7 @@ private:
         return balance(node);
     }
 
-    iterator search(Node *node, const ValueType &elem) const {
+    iterator search(Node* node, const ValueType& elem) const {
         if (!node) {
             return end();
         }
@@ -243,10 +250,9 @@ private:
         } else {
             return node->iter;
         }
-
     }
 
-    iterator lb(Node *node, const ValueType &elem) const {
+    iterator lb(Node* node, const ValueType& elem) const {
         if (!node) {
             return end();
         }
